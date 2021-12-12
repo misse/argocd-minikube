@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: infrastructure
+  namespace: argocd
+spec:
+  generators:
+  - git:
+      repoURL: https://github.com/misse/argocd-minikube.git
+      revision: main
+      directories:
+      - path: infra/*
+  template:
+    metadata:
+      name: '{{path.basename}}'
+    spec:
+      project: default
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: false
+        retry:
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+          limit: 5
+        syncOptions:
+          - Validate=false
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
+      source:
+        repoURL: https://github.com/misse/argocd-minikube.git
+        targetRevision: main
+        path: '{{path}}'
+      destination:
+        server: "https://kubernetes.default.svc"
+        namespace: '{{path.basename}}'
